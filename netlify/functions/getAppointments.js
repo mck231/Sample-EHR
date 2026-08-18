@@ -5,6 +5,9 @@ exports.handler = async () => {
   if (!apiUrl || !apiKey) {
     return {
       statusCode: 500,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ error: 'Server configuration is missing.' }),
     }
   }
@@ -17,18 +20,41 @@ exports.handler = async () => {
       },
     })
 
-    const data = await response.json()
+    if (response.ok) {
+      const contentType = response.headers.get('content-type') || ''
+      if (contentType.includes('application/json')) {
+        const data = await response.json()
+        return {
+          statusCode: 200,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(data),
+        }
+      }
+
+      return {
+        statusCode: 502,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ error: 'Upstream service returned a non-JSON response.' }),
+      }
+    }
 
     return {
       statusCode: response.status,
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(data),
+      body: JSON.stringify({ error: 'Unable to retrieve appointments from upstream service.' }),
     }
   } catch {
     return {
       statusCode: 502,
+      headers: {
+        'Content-Type': 'application/json',
+      },
       body: JSON.stringify({ error: 'Failed to retrieve appointments.' }),
     }
   }
