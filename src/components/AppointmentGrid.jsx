@@ -29,11 +29,13 @@ function AppointmentGrid() {
   const [error, setError] = useState('')
 
   useEffect(() => {
-    let isMounted = true
+    const controller = new AbortController()
 
     async function fetchAppointments() {
       try {
-        const response = await fetch('/.netlify/functions/getAppointments')
+        const response = await fetch('/.netlify/functions/getAppointments', {
+          signal: controller.signal,
+        })
         if (!response.ok) {
           throw new Error('Unable to fetch appointments')
         }
@@ -43,15 +45,13 @@ function AppointmentGrid() {
           ? payload.publishedContent
           : []
 
-        if (isMounted) {
-          setAppointments(fhirAppointments)
-        }
-      } catch {
-        if (isMounted) {
+        setAppointments(fhirAppointments)
+      } catch (err) {
+        if (err.name !== 'AbortError') {
           setError('We could not load appointments right now.')
         }
       } finally {
-        if (isMounted) {
+        if (!controller.signal.aborted) {
           setIsLoading(false)
         }
       }
@@ -60,7 +60,7 @@ function AppointmentGrid() {
     fetchAppointments()
 
     return () => {
-      isMounted = false
+      controller.abort()
     }
   }, [])
 
@@ -68,7 +68,7 @@ function AppointmentGrid() {
     return (
       <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div className="flex items-center gap-3 text-slate-500">
-          <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
+          <span aria-hidden="true" className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-blue-600" />
           <span>Loading appointments...</span>
         </div>
       </section>

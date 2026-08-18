@@ -1,4 +1,4 @@
-exports.handler = async () => {
+export const handler = async () => {
   const apiUrl = process.env.PROGETTO_API_URL
   const apiKey = process.env.PROGETTO_API_KEY
 
